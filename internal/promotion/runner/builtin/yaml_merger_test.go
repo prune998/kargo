@@ -105,20 +105,20 @@ func Test_YAMLMerger_run(t *testing.T) {
 			files: map[string]string{
 				"base.yaml": `
 app:
-  version: "1.0.0"
+  version: 1.0.0
 features:
   newFeature: false
 `,
 				"overrides.yaml": `
 app:
-  version: "2.0.0"
+  version: 2.0.0
 `,
 			},
 			assertions: func(t *testing.T, workDir string, result promotion.StepResult, err error) {
 				assert.NoError(t, err)
 				content, err := os.ReadFile(path.Join(workDir, "modified.yaml"))
 				require.NoError(t, err)
-				assert.Contains(t, string(content), `  version: "2.0.0"`)
+				assert.Contains(t, string(content), `  version: 2.0.0`)
 				assert.Contains(t, string(content), `  newFeature: false`)
 			},
 		},

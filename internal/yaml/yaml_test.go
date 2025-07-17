@@ -170,7 +170,7 @@ characters:
 	}
 }
 
-func TestMergeYAMLFiles(t *testing.T) {
+func TestMergeYAMLDocuments(t *testing.T) {
 	testCases := []struct {
 		name       string
 		inputs     []string
@@ -190,13 +190,12 @@ func TestMergeYAMLFiles(t *testing.T) {
 			// Note: This YAML is invalid because one line is indented with a tab
 			inputs: []string{``},
 			assertions: func(t *testing.T, output string, err error) {
-				require.ErrorContains(t, err, "EOF")
+				require.NoError(t, err)
 				require.Empty(t, output)
 			},
 		},
 		{
 			name: "one invalid input YAML",
-			// Note: This YAML is invalid because one line is indented with a tab
 			inputs: []string{`
 characters:
 - name: Anakin
@@ -208,8 +207,8 @@ characters:
 				require.Equal(
 					t,
 					string(`characters:
-- name: Anakin
-  affiliation: Light side
+  - affiliation: Light side
+    name: Anakin
 `),
 					output,
 				)
@@ -231,8 +230,8 @@ characters:
 				require.Equal(
 					t,
 					string(`characters:
-- name: Arthur Dent
-  answer: 42
+  - answer: 42
+    name: Arthur Dent
 `),
 					output,
 				)
@@ -254,8 +253,8 @@ characters:
 				require.Equal(
 					t,
 					string(`characters:
-- name: Arthur Dent
-  answer: "42"
+  - answer: "42"
+    name: Arthur Dent
 `),
 					output,
 				)
@@ -273,8 +272,8 @@ characters:
 				require.Equal(
 					t,
 					string(`characters:
-- name: Anakin
-  affiliation: Light side
+  - affiliation: Light side
+    name: Anakin
 `),
 					output,
 				)
@@ -296,8 +295,8 @@ characters:
 				require.Equal(
 					t,
 					string(`characters:
-- name: Anakin
-  affiliation: Dark side
+  - affiliation: Dark side
+    name: Anakin
 `),
 					output,
 				)
@@ -327,12 +326,12 @@ episode: 3
 				require.Equal(
 					t,
 					string(`characters:
-- name: Anakin
-  affiliation: Dark side
-weapon:
-  kind: lightsabre
-  color: red
+  - affiliation: Dark side
+    name: Anakin
 episode: 3
+weapon:
+  color: red
+  kind: lightsabre
 `),
 					output,
 				)
@@ -341,7 +340,7 @@ episode: 3
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			b, err := MergeYAMLFiles(testCase.inputs)
+			b, err := MergeYAMLDocuments(testCase.inputs)
 
 			// fmt.Println(b)
 			// fmt.Println(err)

@@ -103,7 +103,7 @@ func (y *yamlMerger) run(
 	}
 
 	// merge YAML files
-	outYAML, err := yaml.MergeYAMLFiles(yamlData)
+	outYAML, err := yaml.MergeYAMLDocuments(yamlData)
 
 	// write yaml file
 	outPath, err := securejoin.SecureJoin(stepCtx.WorkDir, cfg.OutPath)

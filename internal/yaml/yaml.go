@@ -4,14 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"strings"
 
+	"dario.cat/mergo"
 	"go.yaml.in/yaml/v3"
-	kyaml "sigs.k8s.io/kustomize/kyaml/yaml"
-	"sigs.k8s.io/kustomize/kyaml/yaml/merge2"
 )
 
 // Update represents a discrete update to be made to a YAML document.
@@ -150,30 +148,48 @@ func findScalarNode(node *yaml.Node, keyPath []string) (int, int, error) {
 	return 0, 0, fmt.Errorf("key path not found")
 }
 
-// mergeYAMLFiles merges a list of yaml strings
-func MergeYAMLFiles(inputs []string) (string, error) {
+// MergeYAMLDocuments merges a list of yaml documents
+func MergeYAMLDocuments(inputs []string) (string, error) {
 	if len(inputs) == 0 {
 		return "", fmt.Errorf("empty input list provided")
 	}
 
-	mergedNode, err := kyaml.Parse(inputs[0])
-	if err != nil {
-		return "", err
+	baseYAML := map[string]interface{}{}
+	if err := yaml.Unmarshal([]byte(inputs[0]), &baseYAML); err != nil {
+		return "", fmt.Errorf("can't parse document at index 0: %w", err)
 	}
 
 	for i := 1; i < len(inputs); i++ {
-		patchNode, err := kyaml.Parse(inputs[i])
-		if err != nil {
-			if err == io.EOF {
-				continue
-			}
-			return "", err
+		if inputs[i] == "" {
+			continue
 		}
-		mergedNode, err = merge2.Merge(patchNode, mergedNode, kyaml.MergeOptions{ListIncreaseDirection: 1})
-		if err != nil {
-			return "", err
+
+		overrideValues := map[string]interface{}{}
+		if err := yaml.Unmarshal([]byte(inputs[i]), &overrideValues); err != nil {
+			return "", fmt.Errorf("can't parse document at index %d: %w", i, err)
 		}
+
+		err := mergo.Merge(&overrideValues, baseYAML)
+		if err != nil {
+			return "", fmt.Errorf("can't merge document at index %d: %w", i, err)
+		}
+		baseYAML = overrideValues
 	}
 
-	return mergedNode.MustString(), nil
+	// just return empty instead of the empty yaml "{}"
+	if len(baseYAML) == 0 {
+		return "", nil
+	}
+
+	// generate final yaml
+	var mergedYAML bytes.Buffer
+	yamlEncoder := yaml.NewEncoder(&mergedYAML)
+	yamlEncoder.SetIndent(2)
+	defer yamlEncoder.Close()
+	err := yamlEncoder.Encode(baseYAML)
+	// mergedYAML, err := yaml.  yaml.Marshal(baseYAML)
+	if err != nil {
+		return "", fmt.Errorf("can't rendered merged YAML: %w", err)
+	}
+	return mergedYAML.String(), nil
 }
