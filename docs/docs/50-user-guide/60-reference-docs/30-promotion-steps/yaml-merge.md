@@ -11,6 +11,13 @@ file and is commonly followed by a [`helm-template` step](helm-template.md).
 YAML files are merged in order, so the first one is the base, and all
 subsequent files are "overlays", modifying the default values.
 
+:::note
+Merging is done with usual constrains:
+- new objects are merged
+- object with same name are modified
+- lists are replaced
+:::
+
 ## Configuration
 
 | Name | Type | Required | Description |
